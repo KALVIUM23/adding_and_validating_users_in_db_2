@@ -45,6 +45,43 @@ app.post("/login", async (req, res) => {
       .send({ message: "Internal Server Error", success: false });
   }
 });
+app.post("/register", async (req, res) => {
+  try {
+    const { username, mail, password } = req.body;
+
+    // Fixing the condition to check for missing fields
+    if (!username || !mail || !password) {
+      return res.status(400).send({ message: "Enter username, mail, and password", success: false });
+    }
+
+    const userExists = await userModel.findOne({ mail: mail });
+
+    // Fixing the typo in the variable name
+    if (userExists) {
+      return res.status(400).send({ message: "User already exists", success: false });
+    }
+
+    // Hashing the password and creating the user
+    bcrypt.hash(password, 10, async function (err, hashed) {
+      if (err) {
+        return res.status(400).send({ message: "Error in hashing password", success: false });
+      }
+
+      console.log("Password hashed");
+      const user = await userModel.create({
+        username,
+        mail,
+        password: hashed,
+      });
+
+      return res.status(200).send({ message: "User created", success: true });
+    });
+  } catch (error) {
+    console.log(error.message);
+    return res.status(500).send({ message: "Internal server error", success: false });
+  }
+});
+
 
 app.listen(port, () => {
   connectDB();
